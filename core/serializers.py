@@ -5,13 +5,11 @@ from rest_framework import serializers
 
 
 class PredictionInputSerializer(serializers.Serializer):
-    id_sample = serializers.CharField(
-        max_length=100, required=False, default="unknown"
-    )
+    nom_patient = serializers.CharField(max_length=100, required=False)
     DAO = serializers.FloatField()
 
 
-class PredictionOutputSerializer(serializers.Serializer):
-    id_sample = serializers.CharField(max_length=100)
-    prediction = serializers.CharField(max_length=50)
-    confidence = serializers.CharField(max_length=10)
+class PredictionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Prediction
+        fields = "__all__"

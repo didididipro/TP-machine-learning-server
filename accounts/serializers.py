@@ -11,6 +11,5 @@ class UserSerializer(UserSerializer):
         model = User
         fields = (
             "email",
-            "full_name",
             "groups",
         )

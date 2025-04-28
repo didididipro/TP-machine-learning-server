@@ -14,12 +14,12 @@ from . import models
 class PredictCancerView(APIView):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # Load model
-        model_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            "colon_cancer_model.pkl",
-        )
+        # Load model and scaler
+        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        model_path = os.path.join(base_path, "colon_cancer_model.pkl")
+        scaler_path = os.path.join(base_path, "scaler.pkl")
         self.model = joblib.load(model_path)
+        self.scaler = joblib.load(scaler_path)
 
     def post(self, request):
         # Handle prediction
@@ -28,26 +28,32 @@ class PredictCancerView(APIView):
             for item in request.data:
                 serializer = PredictionInputSerializer(data=item)
                 if serializer.is_valid():
-                    dao = serializer.validated_data["DAO"]
+                    UGP2 = serializer.validated_data["UGP2"]
                     nom_patient = serializer.validated_data["nom_patient"]
 
+                    # Normalize input
+                    UGP2_scaled = self.scaler.transform([[UGP2]])
+
                     # Make prediction
-                    prediction = self.model.predict([[dao]])[0]
-                    # Map prediction to class index
-                    class_index = np.where(self.model.classes_ == prediction)[
-                        0
-                    ][0]
-                    confidence = self.model.predict_proba([[dao]])[0][
-                        class_index
-                    ]
+                    prediction = self.model.predict(UGP2_scaled)[0]
+                    # Convert prediction to string
+                    pred_label = "Tumoral" if prediction == 1 else "Normal"
+
+                    # Get confidence if available
+                    confidence = None
+                    if hasattr(self.model, "predict_proba"):
+                        class_index = 1 if prediction == 1 else 0
+                        confidence = self.model.predict_proba(UGP2_scaled)[0][
+                            class_index
+                        ]
+                    else:
+                        confidence = 1.0  # Default to 1.0 if predict_proba is unavailable
 
                     # Prepare result
                     result = {
                         "nom_patient": nom_patient,
-                        "value": dao,
-                        "pred": "Tumoral"
-                        if prediction == "tumoral"
-                        else "Normal",
+                        "value": UGP2,
+                        "pred": pred_label,
                         "confidence": f"{confidence:.2f}",
                     }
                     pred_serializer = PredictionSerializer(data=result)

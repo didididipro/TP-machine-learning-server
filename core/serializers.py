@@ -6,7 +6,7 @@ from rest_framework import serializers
 
 class PredictionInputSerializer(serializers.Serializer):
     nom_patient = serializers.CharField(max_length=100, required=False)
-    DAO = serializers.FloatField()
+    UGP2 = serializers.FloatField()
 
 
 class PredictionSerializer(serializers.ModelSerializer):
